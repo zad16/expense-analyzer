@@ -1,0 +1,51 @@
+name: Deploy to Google VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          envs: GITHUB_TOKEN
+          script: |
+            set -e
+            cd /home/${{ secrets.VM_USER }}/expense_analyzer
+            
+            # Use temporary token to authenticate with GitHub
+            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+            
+            # Reset to match GitHub
+            git fetch --all
+            git reset --hard origin/main
+            
+            # Setup Virtual Environment if missing
+            if [ ! -d venv ]; then
+              python3 -m venv venv
+            fi
+            
+            # Install dependencies
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            # Fix gunicorn workers
+            sudo sed -i 's/--workers 1/--workers 3 --threads 4/' /etc/systemd/system/expense.service
+            sudo systemctl daemon-reload
+            
+            # Restart the app
+            sudo systemctl restart expense || echo "Service not found. Run 'python app.py' manually."

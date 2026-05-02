@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault &middot; Financial Analyst</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a1110;
+      --bg-elevated: rgba(12, 24, 22, 0.72);
+      --panel: rgba(14, 28, 26, 0.84);
+      --panel-strong: rgba(18, 35, 31, 0.96);
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --text: #ecf4f1;
+      --muted: #8ea39a;
+      --muted-strong: #afc0b9;
+      --border: rgba(169, 194, 185, 0.14);
+      --accent: #6ee7b7;
+      --accent-strong: #34d399;
+      --accent-wash: rgba(52, 211, 153, 0.14);
+      --loss: #fb7185;
+      --loss-wash: rgba(251, 113, 133, 0.14);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --content-width: min(880px, 100%);
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f3f0e7;
+      --bg-elevated: rgba(255, 252, 245, 0.85);
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-strong: rgba(255, 255, 255, 0.98);
+      --panel-soft: rgba(40, 55, 48, 0.04);
+      --text: #17211d;
+      --muted: #62756d;
+      --muted-strong: #42564e;
+      --border: rgba(23, 33, 29, 0.1);
+      --accent: #0f9f6e;
+      --accent-strong: #067a54;
+      --accent-wash: rgba(15, 159, 110, 0.12);
+      --loss: #e11d48;
+      --loss-wash: rgba(225, 29, 72, 0.1);
+      --shadow: 0 26px 70px rgba(23, 33, 29, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(110, 231, 183, 0.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(251, 191, 36, 0.1), transparent 24%),
+        linear-gradient(160deg, var(--bg) 0%, #07100f 100%);
+      display: flex;
+      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(circle at center, black 24%, transparent 82%);
+      opacity: 0.22;
+    }
+
+    .sidebar {
+      width: 360px;
+      padding: 28px;
+      border-right: 1px solid var(--border);
+      background: var(--bg-elevated);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      position: relative;
+      z-index: 1;
+      height: 100dvh;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+    }
+
+    .sidebar::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: calc(var(--radius-xl) + 6px);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      pointer-events: none;
+    }
+
+    .brand-row,
+    .sidebar-actions,
+    .brand-title,
+    .hero-meta,
+    .stats-grid,
+    .quick-prompt-grid,
+    .composer-tools,
+    .composer-actions,
+    .main-shell,
+    .message-meta,
+    .typing-pill {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand-row,
+    .composer-actions {
+      justify-content: space-between;
+    }
+
+    .brand-title,
+    .sidebar-actions,
+    .hero-meta,
+    .composer-tools {
+      gap: 12px;
+    }
+
+    .sidebar-content,
+    .hero-copy,
+    .guide-list,
+    .messages-stack,
+    .message-shell,
+    .composer,
+    .summary-card,
+    .history-card,
+    .guide-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-content {
+      gap: 18px;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 6px;
+      padding-bottom: 28px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .brand-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(110, 231, 183, 0.24), rgba(110, 231, 183, 0.08));
+      color: var(--accent);
+      border: 1px solid rgba(110, 231, 183, 0.22);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-size: 13px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .brand {
+      font-family: 'Fraunces', serif;
+      font-size: 27px;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .hero-card,
+    .summary-card,
+    .history-card,
+    .guide-card,
+    .chat-stage,
+    .composer {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -22% -38% auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(110, 231, 183, 0.18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .hero-copy {
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy h2 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(28px, 2vw, 34px);
+      line-height: 1.08;
+      max-width: 10ch;
+      overflow-wrap: anywhere;
+    }
+
+    .hero-copy p,
+    .guide-note,
+    .guide-list li,
+    .card-subtext,
+    .empty-history {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .hero-meta {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill,
+    .ghost-btn,
+    .chip,
+    .send-btn,
+    .lock-btn,
+    .theme-btn,
+    .mobile-menu-btn {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: var(--text);
+      font: inherit;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .pill {
+      padding: 7px 12px;
+      font-size: 12px;
+      color: var(--muted-strong);
+    }
+
+    .sidebar-actions {
+      flex-wrap: wrap;
+    }
+
+    .theme-btn,
+    .lock-btn,
+    .mobile-menu-btn,
+    .ghost-btn {
+      cursor: pointer;
+      text-decoration: none;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .theme-btn:hover,
+    .lock-btn:hover,
+    .mobile-menu-btn:hover,
+    .ghost-btn:hover,
+    .chip:hover,
+    .send-btn:hover {
+      border-color: rgba(110, 231, 183, 0.34);
+      transform: translateY(-1px);
+    }
+
+    .summary-card,
+    .history-card,
+    .guide-card {
+      padding: 20px;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(20px, 1.4vw, 22px);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .section-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .stats-grid {
+      align-items: stretch;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-tile {
+      flex: 1 1 140px;
+      min-width: 0;
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      margin-top: 10px;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(28px, 2vw, 34px);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      overflow-wrap: anywhere;
+    }
+
+    .stat-value.positive {
+      color: var(--accent);
+    }
+
+    .stat-value.negative {
+      color: var(--loss);
+    }
+
+    .stat-caption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.025);
+      font-size: 14px;
+    }
+
+    .history-item-month {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .history-item-month strong {
+      font-size: 14px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .history-item-month span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .history-amount {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .history-item.positive .history-amount {
+      color: var(--accent);
+    }
+
+    .history-item.negative .history-amount {
+      color: var(--loss);
+    }
+
+    .empty-history {
+      padding: 18px 16px;
+      border-radius: 16px;
+      border: 1px dashed var(--border);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .guide-list {
+      gap: 10px;
+      padding-left: 0;
+      list-style: none;
+      margin: 0;
+    }
+
+    .guide-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .guide-list li::before {
+      content: "->";
+      color: var(--accent);
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .main-shell {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-start;
+      height: 100dvh;
+      padding: 34px 22px 26px;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .chat-stage {
+      width: 100%;
+      max-width: 1120px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(12, 25, 22, 0.9), rgba(10, 20, 18, 0.94));
+    }
+
+    [data-theme="light"] .chat-stage {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(252, 248, 239, 0.96));
+    }
+
+    .topbar {
+      width: var(--content-width);
+      margin: 0 auto;
+      padding: 10px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(20px, 1.6vw, 24px);
+      line-height: 1.12;
+      max-width: 22ch;
+      overflow-wrap: anywhere;
+    }
+
+    .topbar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 52ch;
+      line-height: 1.4;
+    }
+
+    #messages {
+      min-height: 0;
+      height: 100%;
+      overflow-y: auto;
+      padding: 14px 28px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+
+    .messages-stack {
+      width: var(--content-width);
+      margin: 0 auto;
+      gap: 14px;
+      padding-bottom: 8px;
+    }
+
+    .message-shell {
+      gap: 8px;
+      max-width: 100%;
+    }
+
+    .message-shell.user {
+      align-items: flex-end;
+    }
+
+    .message-shell.ai {
+      align-items: flex-start;
+    }
+
+    .message-meta {
+      gap: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .avatar.ai {
+      background: var(--accent-wash);
+      color: var(--accent);
+    }
+
+    .avatar.user {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted-strong);
+    }
+
+    .bubble {
+      max-width: min(100%, 760px);
+      border-radius: 22px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      line-height: 1.65;
+      font-size: 15px;
+      overflow-wrap: anywhere;
+      box-shadow: 0 14px 42px rgba(0, 0, 0, 0.12);
+    }
+
+    .message-shell.ai .bubble {
+      background: var(--panel-strong);
+      border-top-left-radius: 10px;
+    }
+
+    .message-shell.user .bubble {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045));
+      border-top-right-radius: 10px;
+    }
+
+    .bubble p:first-child,
+    .bubble h1:first-child,
+    .bubble h2:first-child,
+    .bubble h3:first-child,
+    .bubble ul:first-child,
+    .bubble ol:first-child,
+    .bubble table:first-child {
+      margin-top: 0;
+    }
+
+    .bubble p:last-child,
+    .bubble ul:last-child,
+    .bubble ol:last-child,
+    .bubble table:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble h2,
+    .bubble h3,
+    .bubble h4 {
+      font-family: 'Fraunces', serif;
+      margin: 24px 0 12px;
+      line-height: 1.15;
+    }
+
+    .bubble ul,
+    .bubble ol {
+      padding-left: 22px;
+    }
+
+    .bubble code {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.95em;
+    }
+
+    .bubble pre {
+      background: rgba(0, 0, 0, 0.22);
+      padding: 14px;
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .bubble th,
+    .bubble td {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    .bubble th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted-strong);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .anomaly-box {
+      margin-top: 10px;
+      max-width: min(100%, 760px);
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(251, 113, 133, 0.2);
+      background: var(--loss-wash);
+      color: var(--text);
+    }
+
+    .anomaly-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--loss);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .typing-wrap {
+      padding: 0 28px 6px;
+    }
+
+    .typing-pill {
+      width: var(--content-width);
+      margin: 0 auto;
+      gap: 10px;
+      color: var(--muted-strong);
+      font-size: 13px;
+      min-height: 22px;
+    }
+
+    .typing-pill[hidden] {
+      display: none;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 5px;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.35;
+      animation: blink 1.2s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.25;
+      }
+      40% {
+        transform: translateY(-3px);
+        opacity: 1;
+      }
+    }
+
+    .quick-prompt-grid {
+      width: var(--content-width);
+      margin: 0 auto;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 28px 10px;
+    }
+
+    .chip {
+      cursor: pointer;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: normal;
+      text-align: center;
+    }
+
+    .composer-wrap {
+      padding: 0 28px 16px;
+    }
+
+    .composer {
+      width: var(--content-width);
+      margin: 0 auto;
+      padding: 10px;
+      gap: 8px;
+      background: var(--panel-strong);
+    }
+
+    .composer-input-wrap {
+      position: relative;
+    }
+
+    #user-input {
+      width: 100%;
+      min-height: 48px;
+      max-height: 132px;
+      resize: none;
+      border: 1px solid transparent;
+      outline: none;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text);
+      padding: 14px 16px 12px;
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.45;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    #user-input:focus {
+      border-color: rgba(110, 231, 183, 0.28);
+      box-shadow: 0 0 0 4px rgba(110, 231, 183, 0.08);
+    }
+
+    .composer-hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .ghost-btn {
+      padding: 8px 11px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .send-btn {
+      cursor: pointer;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      background: linear-gradient(135deg, rgba(110, 231, 183, 0.24), rgba(110, 231, 183, 0.08));
+      border-color: rgba(110, 231, 183, 0.28);
+    }
+
+    .send-btn[disabled],
+    .ghost-btn[disabled] {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .status-note {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .error-banner {
+      display: none;
+      width: var(--content-width);
+      margin: 0 auto 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(251, 113, 133, 0.24);
+      background: var(--loss-wash);
+      color: var(--text);
+      padding: 13px 15px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .error-banner.visible {
+      display: block;
+    }
+
+    .empty-state {
+      display: none;
+      width: var(--content-width);
+      margin: auto auto 0;
+      padding: 18px 20px;
+      border-radius: 20px;
+      border: 1px dashed var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      text-align: left;
+    }
+
+    .empty-state.visible {
+      display: block;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 10px;
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+    }
+
+    .empty-state p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 55ch;
+      line-height: 1.6;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      padding: 10px 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .sidebar {
+        width: 330px;
+        padding: 22px;
+      }
+
+      .topbar h1,
+      .hero-copy h2 {
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 920px) {
+      body {
+        flex-direction: column;
+        overflow: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 18px;
+        height: auto;
+        max-height: none;
+        position: relative;
+        top: auto;
+      }
+
+      .sidebar::after {
+        inset: 10px;
+      }
+
+      .mobile-menu-btn {
+        display: inline-flex;
+      }
+
+      .sidebar-content {
+        display: none;
+        overflow: visible;
+        padding-right: 0;
+        padding-bottom: 0;
+      }
+
+      .sidebar.sidebar-open .sidebar-content {
+        display: flex;
+      }
+
+      .main-shell {
+        display: block;
+        height: auto;
+        overflow: visible;
+        padding: 18px 16px 16px;
+      }
+
+      .chat-stage {
+        height: auto;
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .brand {
+        font-size: 24px;
+      }
+
+      .hero-copy h2,
+      .topbar h1 {
+        font-size: 24px;
+      }
+
+      .topbar,
+      #messages,
+      .typing-wrap,
+      .composer-wrap {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .quick-prompt-grid {
+        padding-left: 18px;
+        padding-right: 18px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+      }
+
+      .quick-prompt-grid::-webkit-scrollbar {
+        display: none;
+      }
+
+      .metric-card {
+        min-width: calc(50% - 5px);
+        max-width: none;
+      }
+
+      .composer-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .composer-tools {
+        justify-content: space-between;
+      }
+
+      .send-btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .sidebar-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+
+      .brand-title {
+        gap: 10px;
+      }
+
+      .brand-badge {
+        width: 40px;
+        height: 40px;
+      }
+
+      .topbar,
+      #messages,
+      .typing-wrap,
+      .composer-wrap,
+      .quick-prompt-grid {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .bubble {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .metric-card {
+        min-width: 100%;
+      }
+
+      .hero-copy h2,
+      .topbar h1 {
+        font-size: 22px;
+      }
+
+      .stat-value {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="brand-title">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" type="button" onclick="toggleSidebar()" aria-label="Toggle dashboard panels" aria-expanded="false">&#9776;</button>
+        <div class="brand-badge">VLT</div>
+        <div>
+          <div class="eyebrow">Personal finance desk</div>
+          <h2 class="brand">Vault</h2>
+        </div>
+      </div>
+      <div class="sidebar-actions">
+        <button class="theme-btn" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch color theme">Light mode</button>
+        <a href="/logout" class="lock-btn" aria-label="Lock the app">Lock</a>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <div class="eyebrow">Today&apos;s workspace</div>
+          <h2>Ask sharper questions about your money.</h2>
+          <p>Use the chat like an analyst: zoom into a category, trace a spending spike, or compare how a month behaved against the rest of the year.</p>
+          <div class="hero-meta">
+            <span class="pill">Natural language search</span>
+            <span class="pill">AI summaries</span>
+            <span class="pill">Fast monthly snapshots</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary-card">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Snapshot</div>
+            <h3 class="section-title">This month</h3>
+          </div>
+          <span class="pill" id="sync-pill">Syncing...</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-tile">
+            <div class="stat-label">Net savings</div>
+            <div id="current-saving" class="stat-value">Rs 0</div>
+            <div class="stat-caption">Income minus spending for the current month.</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-label">Latest data</div>
+            <div id="db-date" class="stat-value" style="font-size: clamp(20px, 1.4vw, 24px); line-height: 1.2;">Checking...</div>
+            <div class="stat-caption">Most recent Cashew backup currently in view.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="history-card">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Trendline</div>
+            <h3 class="section-title">Recent history</h3>
+          </div>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="empty-history">Pulling the latest monthly history...</div>
+        </div>
+      </section>
+
+      <section class="guide-card">
+        <div>
+          <div class="section-kicker">Prompt ideas</div>
+          <h3 class="section-title">Useful asks</h3>
+        </div>
+        <p class="guide-note">You will get the best answers when you mention a time period and a focus area.</p>
+        <ul class="guide-list">
+          <li>Show my highest spending day this month and what caused it.</li>
+          <li>Compare food spending this month with last month.</li>
+          <li>List all purchases matching "rice" this year.</li>
+          <li>Summarize 2026 so far with any unusual spikes.</li>
+        </ul>
+      </section>
+    </div>
+  </aside>
+
+  <main class="main-shell">
+    <section class="chat-stage">
+      <header class="topbar">
+        <div class="eyebrow">Financial analyst</div>
+        <h1>Ask about spending, trends, or a specific purchase.</h1>
+        <p>Keep it simple: mention a period, a category, or an item in quotes.</p>
+      </header>
+
+      <div id="messages">
+        <div class="messages-stack" id="messages-stack">
+          <div class="empty-state visible" id="empty-state">
+            <h3>Start with one focused question.</h3>
+            <p>Examples: food spending this month, compare this month with last month, or purchases matching "rice".</p>
+          </div>
+          <div class="message-shell ai">
+            <div class="message-meta">
+              <span class="avatar ai">AI</span>
+              <span>Vault analyst</span>
+            </div>
+            <div class="bubble">Your data desk is ready. Ask about a month, a category like food or transport, or a specific purchase such as "rice" or "shirt".</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="typing-wrap">
+        <div class="typing-pill" id="typing" hidden>
+          <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span id="typing-text">Analyzing your data...</span>
+        </div>
+        <div class="error-banner" id="error-banner"></div>
+      </div>
+
+      <div class="quick-prompt-grid">
+        <button class="chip" type="button" onclick="sendChip('Summary for this year')">Summary for this year</button>
+        <button class="chip" type="button" onclick="sendChip('Highest spending day this month')">Highest spending day</button>
+        <button class="chip" type="button" onclick="sendChip('How much did I spend on food this month?')">Food spending</button>
+        <button class="chip" type="button" onclick="sendChip('Compare this month with last month')">Compare months</button>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="composer-input-wrap">
+            <textarea id="user-input" rows="1" placeholder="Ask about a month, category, trend, or specific item..." autocomplete="off" autofocus></textarea>
+          </div>
+          <div class="composer-actions">
+            <div class="composer-tools">
+              <button class="ghost-btn" id="clear-chat-btn" type="button" onclick="resetChat()">New chat</button>
+              <span class="status-note">Press Enter to send, Shift+Enter for a new line.</span>
+            </div>
+            <button class="send-btn" id="send-btn" type="button" onclick="sendMessage()">Analyze</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const messagesStackEl = document.getElementById('messages-stack');
+    const inputEl = document.getElementById('user-input');
+    const savingEl = document.getElementById('current-saving');
+    const dbDateEl = document.getElementById('db-date');
+    const typingEl = document.getElementById('typing');
+    const typingTextEl = document.getElementById('typing-text');
+    const sendBtnEl = document.getElementById('send-btn');
+    const clearBtnEl = document.getElementById('clear-chat-btn');
+    const errorBannerEl = document.getElementById('error-banner');
+    const historyListEl = document.getElementById('history-list');
+    const syncPillEl = document.getElementById('sync-pill');
+    const themeToggleEl = document.getElementById('theme-toggle');
+    const mobileMenuBtnEl = document.getElementById('mobile-menu-btn');
+    const bodyEl = document.body;
+
+    function formatCurrency(value, compact = false) {
+      const amount = Number(value || 0);
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: compact ? 0 : 2
+      }).format(amount);
+    }
+
+    function setTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      bodyEl.setAttribute('data-theme', nextTheme);
+      themeToggleEl.textContent = nextTheme === 'light' ? 'Dark mode' : 'Light mode';
+      localStorage.setItem('vault-theme', nextTheme);
+    }
+
+    function toggleTheme() {
+      setTheme(bodyEl.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isOpen = sidebar.classList.toggle('sidebar-open');
+      mobileMenuBtnEl.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function autosizeComposer() {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = `${Math.min(inputEl.scrollHeight, 180)}px`;
+    }
+
+    function setBusyState(isBusy, message = 'Analyzing your data...') {
+      typingTextEl.textContent = message;
+      typingEl.hidden = !isBusy;
+      sendBtnEl.disabled = isBusy;
+      clearBtnEl.disabled = isBusy;
+      inputEl.disabled = isBusy;
+    }
+
+    function showError(message) {
+      errorBannerEl.textContent = message;
+      errorBannerEl.classList.add('visible');
+    }
+
+    function clearError() {
+      errorBannerEl.textContent = '';
+      errorBannerEl.classList.remove('visible');
+    }
+
+    function updateEmptyState() {
+      const emptyStateEl = document.getElementById('empty-state');
+      const totalMessages = messagesStackEl.querySelectorAll('.message-shell').length;
+      emptyStateEl.classList.toggle('visible', totalMessages <= 1);
+    }
+
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function closeSidebarOnMobile() {
+      if (window.innerWidth <= 920) {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.remove('sidebar-open');
+        mobileMenuBtnEl.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function loadPreviewState() {
+      savingEl.textContent = formatCurrency(18420, true);
+      savingEl.className = 'stat-value positive';
+      dbDateEl.textContent = 'April 20, 2026';
+      syncPillEl.textContent = 'Preview';
+      historyListEl.innerHTML = `
+        <div class="history-item positive">
+          <div class="history-item-month">
+            <strong>March 2026</strong>
+            <span>Finished with savings</span>
+          </div>
+          <div class="history-amount">${formatCurrency(12670, true)}</div>
+        </div>
+        <div class="history-item negative">
+          <div class="history-item-month">
+            <strong>February 2026</strong>
+            <span>Finished below zero</span>
+          </div>
+          <div class="history-amount">${formatCurrency(-3280, true)}</div>
+        </div>
+        <div class="history-item positive">
+          <div class="history-item-month">
+            <strong>January 2026</strong>
+            <span>Finished with savings</span>
+          </div>
+          <div class="history-amount">${formatCurrency(9050, true)}</div>
+        </div>
+      `;
+
+      appendMessage('user', 'Compare this month with last month and call out what changed.');
+      appendMessage('ai', `### Quick read
+
+This month is currently pacing ahead of last month, with **stronger net savings** and fewer large discretionary spikes.
+
+| period | net savings | note |
+| --- | ---: | --- |
+| April 2026 | Rs 18,420 | Lower shopping spend so far |
+| March 2026 | Rs 12,670 | One heavier discretionary week |
+
+The main difference is that food is still steady, but lifestyle spending has softened. If you want, we can drill into the exact transactions behind the biggest swing.`);
+      scrollToBottom();
+    }
+
+    async function fetchStats(isRetry = false) {
+      try {
+        syncPillEl.textContent = isRetry ? 'Refreshing...' : 'Syncing...';
+        const res = await fetch('/api/summary');
+        if (!res.ok) {
+          throw new Error('Unable to load summary data right now.');
+        }
+
+        const data = await res.json();
+        if (data.current) {
+          const savings = Number(data.current.savings || 0);
+          savingEl.textContent = formatCurrency(savings, true);
+          savingEl.className = `stat-value ${savings >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        if (data.db_info) {
+          dbDateEl.textContent = data.db_info.date || 'Unavailable';
+          syncPillEl.textContent = data.db_info.date ? 'Ready' : 'Waiting for data';
+        } else {
+          dbDateEl.textContent = 'Unavailable';
+          syncPillEl.textContent = 'Waiting for data';
+        }
+
+        historyListEl.innerHTML = '';
+        if (data.history && data.history.length > 1) {
+          data.history.slice(1, 5).forEach((entry) => {
+            const row = document.createElement('div');
+            row.className = `history-item ${entry.is_positive ? 'positive' : 'negative'}`;
+            row.innerHTML = `
+              <div class="history-item-month">
+                <strong>${entry.month}</strong>
+                <span>${entry.is_positive ? 'Finished with savings' : 'Finished below zero'}</span>
+              </div>
+              <div class="history-amount">${formatCurrency(entry.savings, true)}</div>
+            `;
+            historyListEl.appendChild(row);
+          });
+        } else {
+          historyListEl.innerHTML = '<div class="empty-history">No monthly history is available yet.</div>';
+        }
+
+        if (!isRetry && (!data.db_info || !data.db_info.date)) {
+          setTimeout(() => fetchStats(true), 2500);
+        }
+      } catch (err) {
+        syncPillEl.textContent = 'Offline';
+        dbDateEl.textContent = 'Unavailable';
+        historyListEl.innerHTML = '<div class="empty-history">Could not load monthly data right now.</div>';
+        console.error('Failed to fetch stats:', err);
+      }
+    }
+
+    function sendChip(text) {
+      inputEl.value = text;
+      autosizeComposer();
+      sendMessage();
+      inputEl.focus();
+    }
+
+    function createMessageMeta(role) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message-meta';
+
+      const avatar = document.createElement('span');
+      avatar.className = `avatar ${role}`;
+      avatar.textContent = role === 'ai' ? 'AI' : 'YOU';
+
+      const label = document.createElement('span');
+      label.textContent = role === 'ai' ? 'Vault analyst' : 'You';
+
+      wrapper.appendChild(avatar);
+      wrapper.appendChild(label);
+      return wrapper;
+    }
+
+    function appendMessage(role, text) {
+      const shell = document.createElement('div');
+      shell.className = `message-shell ${role}`;
+      shell.appendChild(createMessageMeta(role));
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      let content = text || '';
+      let anomalyHtml = '';
+
+      if (role === 'ai') {
+        const anomalyMatch = content.match(/<anomaly>([\s\S]*?)<\/anomaly>/i);
+        if (anomalyMatch) {
+          const anomalyText = anomalyMatch[1].trim();
+          anomalyHtml = `<div class="anomaly-box"><strong>Warning</strong><div>${marked.parse(anomalyText)}</div></div>`;
+          content = content.replace(/<anomaly>[\s\S]*?<\/anomaly>/i, '').trim();
+        }
+        bubble.innerHTML = marked.parse(content || 'I could not generate a response.');
+      } else {
+        bubble.textContent = content;
+      }
+
+      shell.appendChild(bubble);
+
+      if (anomalyHtml) {
+        const anomalyWrap = document.createElement('div');
+        anomalyWrap.innerHTML = anomalyHtml;
+        shell.appendChild(anomalyWrap.firstChild);
+      }
+
+      messagesStackEl.appendChild(shell);
+      updateEmptyState();
+      scrollToBottom();
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || sendBtnEl.disabled) return;
+
+      clearError();
+      inputEl.value = '';
+      autosizeComposer();
+      appendMessage('user', text);
+      setBusyState(true, 'Analyzing your data...');
+      closeSidebarOnMobile();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.reply || data.error || 'The analysis request failed.');
+        }
+
+        appendMessage('ai', data.reply || 'I could not generate a response.');
+        fetchStats();
+      } catch (err) {
+        showError(err.message || 'Connection error. Please try again.');
+      } finally {
+        setBusyState(false);
+        inputEl.focus();
+      }
+    }
+
+    async function resetChat() {
+      clearError();
+      try {
+        await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reset: true })
+        });
+      } catch (err) {
+        console.error('Failed to reset chat state:', err);
+      }
+
+      messagesStackEl.innerHTML = `
+        <div class="empty-state visible" id="empty-state">
+          <h3>Start with a question that narrows the lens.</h3>
+          <p>Try a category, a specific item in quotes, or a time-based comparison such as this month versus last month. The assistant will keep the conversation going from there.</p>
+        </div>
+        <div class="message-shell ai">
+          <div class="message-meta">
+            <span class="avatar ai">AI</span>
+            <span>Vault analyst</span>
+          </div>
+          <div class="bubble">Fresh slate. Ask about a category, a date range, or a single item in quotes to inspect specific purchases.</div>
+        </div>
+      `;
+      updateEmptyState();
+      scrollToBottom();
+    }
+
+    inputEl.addEventListener('input', autosizeComposer);
+    inputEl.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    const savedTheme = localStorage.getItem('vault-theme');
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      setTheme('dark');
+    }
+
+    autosizeComposer();
+    const isPreviewMode = new URLSearchParams(window.location.search).get('preview') === '1';
+    if (isPreviewMode) {
+      loadPreviewState();
+    } else {
+      setTimeout(fetchStats, 600);
+    }
+    updateEmptyState();
+  </script>
+</body>
+</html>

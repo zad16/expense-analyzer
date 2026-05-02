@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault &middot; Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #091110;
+      --panel: rgba(13, 28, 24, 0.84);
+      --panel-strong: rgba(18, 34, 31, 0.96);
+      --text: #edf4f1;
+      --muted: #8da49a;
+      --border: rgba(169, 194, 185, 0.14);
+      --accent: #6ee7b7;
+      --accent-strong: #34d399;
+      --accent-wash: rgba(52, 211, 153, 0.14);
+      --loss: #fb7185;
+      --loss-wash: rgba(251, 113, 133, 0.12);
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.32);
+      --radius-xl: 32px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(110, 231, 183, 0.18), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.12), transparent 22%),
+        linear-gradient(160deg, var(--bg) 0%, #06100f 100%);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at center, black 28%, transparent 82%);
+      opacity: 0.24;
+      pointer-events: none;
+    }
+
+    .login-shell {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .info-pane,
+    .form-pane {
+      padding: 42px;
+    }
+
+    .info-pane {
+      background:
+        radial-gradient(circle at top right, rgba(110, 231, 183, 0.18), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .brand-row,
+    .trust-list li {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand-row {
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(110, 231, 183, 0.24), rgba(110, 231, 183, 0.08));
+      border: 1px solid rgba(110, 231, 183, 0.24);
+      color: var(--accent);
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .brand-name,
+    .headline,
+    .form-title {
+      font-family: 'Fraunces', serif;
+      margin: 0;
+      line-height: 1.04;
+    }
+
+    .brand-name {
+      font-size: 29px;
+    }
+
+    .headline {
+      font-size: clamp(30px, 3.6vw, 48px);
+      max-width: 10ch;
+      overflow-wrap: anywhere;
+    }
+
+    .lede,
+    .support-copy,
+    .trust-list li {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .lede {
+      max-width: 42ch;
+      font-size: 15px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .trust-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .trust-list li {
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .trust-list li::before {
+      content: "+";
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .form-pane {
+      background: var(--panel-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-card {
+      width: min(360px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .form-title {
+      font-size: clamp(30px, 2.8vw, 34px);
+      overflow-wrap: anywhere;
+    }
+
+    .support-copy {
+      margin: 0;
+      font-size: 14px;
+      max-width: 34ch;
+    }
+
+    .pin-label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 18px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      outline: none;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      text-align: center;
+      font: inherit;
+      font-size: 24px;
+      letter-spacing: 0.4em;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    input[type="password"]:focus {
+      border-color: rgba(110, 231, 183, 0.3);
+      box-shadow: 0 0 0 4px rgba(110, 231, 183, 0.08);
+    }
+
+    button {
+      width: 100%;
+      padding: 15px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(110, 231, 183, 0.28);
+      background: linear-gradient(135deg, rgba(110, 231, 183, 0.24), rgba(110, 231, 183, 0.08));
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(110, 231, 183, 0.4);
+    }
+
+    .error {
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(251, 113, 133, 0.24);
+      background: var(--loss-wash);
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .microcopy {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 860px) {
+      .login-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .info-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 14px;
+      }
+
+      .info-pane,
+      .form-pane {
+        padding: 28px 22px;
+      }
+
+      .headline,
+      .form-title {
+        font-size: 28px;
+      }
+
+      .stats-row {
+        grid-template-columns: 1fr;
+      }
+
+      input[type="password"] {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-shell">
+    <section class="info-pane">
+      <div>
+        <div class="brand-row">
+          <div class="brand-mark">VLT</div>
+          <div>
+            <div class="eyebrow">Personal finance desk</div>
+            <h1 class="brand-name">Vault</h1>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="eyebrow">Secure access</div>
+        <h2 class="headline">A calmer way to inspect your money habits.</h2>
+        <p class="lede">Unlock the dashboard to review monthly savings, explore specific spending patterns, and ask natural-language questions across your Cashew backup data.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">What you can ask</div>
+          <div class="stat-value">Trends and comparisons</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Good for</div>
+          <div class="stat-value">Item and category searches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Output style</div>
+          <div class="stat-value">Readable summaries</div>
+        </div>
+      </div>
+
+      <ul class="trust-list">
+        <li>Review specific purchases by putting the item in quotes.</li>
+        <li>Get quicker context with a monthly snapshot and recent history.</li>
+        <li>Lock the app when you are done and pick up where you left off later.</li>
+      </ul>
+    </section>
+
+    <section class="form-pane">
+      <form class="form-card" method="POST" action="/login">
+        <div>
+          <div class="eyebrow">Unlock workspace</div>
+          <h2 class="form-title">Enter your PIN</h2>
+        </div>
+        <p class="support-copy">Use the PIN configured for this app to open your finance dashboard.</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <div>
+          <label class="pin-label" for="pin">Security PIN</label>
+          <div class="input-wrap">
+            <input id="pin" type="password" name="pin" autofocus autocomplete="off" inputmode="numeric" placeholder="...." />
+          </div>
+        </div>
+
+        <button type="submit">Unlock Vault</button>
+        <p class="microcopy">This screen does not change your data. It only gates access to the dashboard.</p>
+      </form>
+    </section>
+  </div>
+</body>
+</html>

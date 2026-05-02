@@ -1,0 +1,15 @@
+.env
+.env_recovery
+__pycache__/
+*.pyc
+*.sql
+db/
+venv/
+.vscode/
+key
+key.pub
+*.csv
+sync_to_vm.ps1
+local_db/
+app.log
+rclone.conf

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Vault Mobile Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08100f;
+      --panel: #0f1b19;
+      --border: rgba(169, 194, 185, 0.12);
+      --text: #eef5f1;
+      --muted: #8ea39a;
+      --accent: #6ee7b7;
+      --loss: #fb7185;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        radial-gradient(circle at top center, rgba(110, 231, 183, 0.12), transparent 28%),
+        linear-gradient(180deg, #091311 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .card {
+      width: min(100%, 380px);
+      border-radius: 26px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: 32px;
+      line-height: 1.02;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 8px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      padding: 16px 14px;
+      text-align: center;
+      font: inherit;
+      font-size: 24px;
+      letter-spacing: 0.35em;
+      outline: none;
+    }
+
+    button {
+      min-height: 48px;
+      border-radius: 999px;
+      border: 1px solid rgba(110, 231, 183, 0.28);
+      background: rgba(110, 231, 183, 0.16);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .error {
+      border-radius: 16px;
+      border: 1px solid rgba(251, 113, 133, 0.22);
+      background: rgba(251, 113, 133, 0.12);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <form class="card" method="POST" action="/m/login">
+    <div class="eyebrow">Vault mobile</div>
+    <h1>Unlock your finance chat.</h1>
+    <p>A lightweight phone-first version of Vault for quick financial questions on the go.</p>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div>
+      <label for="pin">Security PIN</label>
+      <input id="pin" type="password" name="pin" placeholder="...." autofocus autocomplete="off" inputmode="numeric" />
+    </div>
+
+    <button type="submit">Unlock</button>
+  </form>
+</body>
+</html>

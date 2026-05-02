@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Vault Mobile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08100f;
+      --panel: #0e1a18;
+      --panel-soft: #132320;
+      --surface: #152623;
+      --border: rgba(169, 194, 185, 0.12);
+      --text: #eff5f2;
+      --muted: #92a59d;
+      --accent: #6ee7b7;
+      --accent-soft: rgba(110, 231, 183, 0.12);
+      --loss: #fb7185;
+      --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+      --safe-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top center, rgba(110, 231, 183, 0.12), transparent 28%),
+        linear-gradient(180deg, #091311 0%, var(--bg) 100%);
+    }
+
+    .app-shell {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: calc(14px + env(safe-area-inset-top)) 16px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .lock-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 16px 10px;
+    }
+
+    .summary-card {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .summary-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .summary-value {
+      margin-top: 8px;
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .summary-value.positive { color: var(--accent); }
+    .summary-value.negative { color: var(--loss); }
+
+    .summary-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .quick-prompts {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 0 16px 10px;
+      scrollbar-width: none;
+    }
+
+    .quick-prompts::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .messages {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 2px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .message.user {
+      align-items: flex-end;
+    }
+
+    .message.ai {
+      align-items: flex-start;
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .message.user .avatar {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .bubble {
+      width: min(100%, 100%);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 14px;
+      font-size: 15px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .message.user .bubble {
+      width: auto;
+      max-width: 90%;
+      background: var(--surface);
+    }
+
+    .bubble p:first-child,
+    .bubble ul:first-child,
+    .bubble ol:first-child,
+    .bubble table:first-child,
+    .bubble h1:first-child,
+    .bubble h2:first-child,
+    .bubble h3:first-child {
+      margin-top: 0;
+    }
+
+    .bubble p:last-child,
+    .bubble ul:last-child,
+    .bubble ol:last-child,
+    .bubble table:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble h2,
+    .bubble h3,
+    .bubble h4 {
+      font-family: 'Fraunces', serif;
+      margin: 18px 0 10px;
+      line-height: 1.15;
+    }
+
+    .bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow-x: auto;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+
+    .bubble th,
+    .bubble td {
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    .bubble th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .typing {
+      padding: 0 16px 6px;
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .typing[hidden] {
+      display: none;
+    }
+
+    .error-banner {
+      display: none;
+      margin: 0 16px 8px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(251, 113, 133, 0.22);
+      background: rgba(251, 113, 133, 0.12);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .error-banner.visible {
+      display: block;
+    }
+
+    .composer-wrap {
+      padding: 0 16px var(--safe-bottom);
+      background: linear-gradient(180deg, rgba(8, 16, 15, 0), rgba(8, 16, 15, 0.92) 22%, rgba(8, 16, 15, 1) 100%);
+    }
+
+    .composer {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    #user-input {
+      width: 100%;
+      min-height: 44px;
+      max-height: 120px;
+      resize: none;
+      border: none;
+      outline: none;
+      border-radius: 14px;
+      background: var(--panel-soft);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .composer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .composer-note {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ghost-btn,
+    .send-btn {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .send-btn {
+      background: rgba(110, 231, 183, 0.18);
+      border-color: rgba(110, 231, 183, 0.25);
+    }
+
+    .ghost-btn[disabled],
+    .send-btn[disabled] {
+      opacity: 0.55;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">Mobile analyst</div>
+        <h1>Vault</h1>
+      </div>
+      <a href="/m/logout" class="lock-link">Lock</a>
+    </header>
+
+    <section class="summary-strip">
+      <div class="summary-card">
+        <div class="summary-label">This month</div>
+        <div id="current-saving" class="summary-value">Rs 0</div>
+        <div class="summary-note">Net savings for the current month.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Latest data</div>
+        <div id="db-date" class="summary-value" style="font-size: 18px;">Checking...</div>
+        <div class="summary-note">Most recent synced backup in use.</div>
+      </div>
+    </section>
+
+    <div class="quick-prompts">
+      <button class="chip" type="button" onclick="sendChip('Summary for this year')">This year</button>
+      <button class="chip" type="button" onclick="sendChip('How much did I spend on food this month?')">Food</button>
+      <button class="chip" type="button" onclick="sendChip('Highest spending day this month')">Highest day</button>
+      <button class="chip" type="button" onclick="sendChip('Compare this month with last month')">Compare</button>
+    </div>
+
+    <main class="messages" id="messages">
+      <div class="message ai">
+        <div class="message-meta">
+          <span class="avatar">AI</span>
+          <span>Vault analyst</span>
+        </div>
+        <div class="bubble">Ask about a period, a category, or a specific item in quotes. Example: <code>"rice"</code> this year.</div>
+      </div>
+    </main>
+
+    <div class="typing" id="typing" hidden>Analyzing your data...</div>
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="user-input" rows="1" placeholder="Ask about spending..." autocomplete="off"></textarea>
+        <div class="composer-row">
+          <div class="composer-note">Enter to send</div>
+          <div class="composer-actions">
+            <button class="ghost-btn" id="clear-btn" type="button" onclick="resetChat()">New</button>
+            <button class="send-btn" id="send-btn" type="button" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('user-input');
+    const sendBtnEl = document.getElementById('send-btn');
+    const clearBtnEl = document.getElementById('clear-btn');
+    const typingEl = document.getElementById('typing');
+    const errorBannerEl = document.getElementById('error-banner');
+    const savingEl = document.getElementById('current-saving');
+    const dbDateEl = document.getElementById('db-date');
+
+    function formatCurrency(value, compact = false) {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: compact ? 0 : 2
+      }).format(Number(value || 0));
+    }
+
+    function autosizeComposer() {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = `${Math.min(inputEl.scrollHeight, 120)}px`;
+    }
+
+    function setBusyState(isBusy, message = 'Analyzing your data...') {
+      typingEl.textContent = message;
+      typingEl.hidden = !isBusy;
+      inputEl.disabled = isBusy;
+      sendBtnEl.disabled = isBusy;
+      clearBtnEl.disabled = isBusy;
+    }
+
+    function clearError() {
+      errorBannerEl.classList.remove('visible');
+      errorBannerEl.textContent = '';
+    }
+
+    function showError(message) {
+      errorBannerEl.textContent = message;
+      errorBannerEl.classList.add('visible');
+    }
+
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/summary');
+        if (!res.ok) throw new Error('Unable to load summary data.');
+        const data = await res.json();
+        if (data.current) {
+          const savings = Number(data.current.savings || 0);
+          savingEl.textContent = formatCurrency(savings, true);
+          savingEl.className = `summary-value ${savings >= 0 ? 'positive' : 'negative'}`;
+        }
+        if (data.db_info) {
+          dbDateEl.textContent = data.db_info.date || 'Unavailable';
+        }
+      } catch (err) {
+        dbDateEl.textContent = 'Unavailable';
+      }
+    }
+
+    function sendChip(text) {
+      inputEl.value = text;
+      autosizeComposer();
+      sendMessage();
+    }
+
+    function appendMessage(role, text) {
+      const wrap = document.createElement('div');
+      wrap.className = `message ${role}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'message-meta';
+      meta.innerHTML = `<span class="avatar">${role === 'ai' ? 'AI' : 'YOU'}</span><span>${role === 'ai' ? 'Vault analyst' : 'You'}</span>`;
+      wrap.appendChild(meta);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (role === 'ai') {
+        bubble.innerHTML = marked.parse(text || 'I could not generate a response.');
+      } else {
+        bubble.textContent = text;
+      }
+      wrap.appendChild(bubble);
+      messagesEl.appendChild(wrap);
+      scrollToBottom();
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || sendBtnEl.disabled) return;
+      clearError();
+      inputEl.value = '';
+      autosizeComposer();
+      appendMessage('user', text);
+      setBusyState(true);
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        if (res.status === 401) {
+          window.location.href = '/m/login';
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.reply || data.error || 'Request failed.');
+        appendMessage('ai', data.reply || 'I could not generate a response.');
+        fetchStats();
+      } catch (err) {
+        showError(err.message || 'Connection error. Please try again.');
+      } finally {
+        setBusyState(false);
+        inputEl.focus();
+      }
+    }
+
+    async function resetChat() {
+      clearError();
+      try {
+        await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reset: true })
+        });
+      } catch (err) {}
+
+      messagesEl.innerHTML = `
+        <div class="message ai">
+          <div class="message-meta">
+            <span class="avatar">AI</span>
+            <span>Vault analyst</span>
+          </div>
+          <div class="bubble">Fresh slate. Ask about a month, category, or quoted item like <code>"rice"</code>.</div>
+        </div>
+      `;
+    }
+
+    inputEl.addEventListener('input', autosizeComposer);
+    inputEl.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    autosizeComposer();
+    fetchStats();
+  </script>
+</body>
+</html>

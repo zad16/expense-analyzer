@@ -1,0 +1,66 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GITHUB_TOKEN
+          script: |
+            set -e
+            
+            # Ensure git and python requirements are installed
+            if ! command -v git &> /dev/null; then
+              echo "Git not found. Installing..."
+              if command -v apt &> /dev/null; then
+                sudo apt update && sudo apt install -y git python3-venv python3-pip
+              elif command -v yum &> /dev/null; then
+                sudo yum install -y git python3
+              fi
+            fi
+            
+            APP_DIR="/home/${{ secrets.EC2_USER }}/expense_analyzer_mobile"
+            
+            # Create directory if it doesn't exist
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            
+            # Clone if .git is missing, otherwise update
+            if [ ! -d ".git" ]; then
+              echo "Cloning repository..."
+              git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git .
+            else
+              echo "Updating existing repository..."
+              git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+              git fetch --all
+              git reset --hard origin/main
+            fi
+            
+            # Setup Virtual Environment if missing
+            if [ ! -d venv ]; then
+              python3 -m venv venv
+            fi
+            
+            # Install dependencies
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            # Restart the app
+            sudo systemctl restart vault-mobile || echo "Service vault-mobile not running. Follow DEPLOY_EC2.md to set it up initially."

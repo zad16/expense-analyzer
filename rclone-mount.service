@@ -1,0 +1,19 @@
+[Unit]
+Description=Rclone mount for Google Drive (Cashew Backup)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=ec2-user
+Group=ec2-user
+ExecStart=/usr/bin/rclone mount gdrive:cashew_backup /home/ec2-user/expense_analyzer_mobile/db \
+    --config /home/ec2-user/.config/rclone/rclone.conf \
+    --vfs-cache-mode writes \
+    --allow-non-empty
+ExecStop=/bin/fusermount -u /home/ec2-user/expense_analyzer_mobile/db
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
