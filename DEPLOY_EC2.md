@@ -28,7 +28,7 @@ Recommended instance:
 Connect:
 
 ```bash
-ssh -i your-key.pem ubuntu@13.60.221.207
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
 ```
 
 ## 2. Install system packages
@@ -52,7 +52,7 @@ You can use `git clone`, `scp`, or rsync.
 If the repo is private or you want a direct copy from your machine:
 
 ```bash
-scp -i your-key.pem -r . ubuntu@13.60.221.207:/home/ubuntu/expense_analyzer_mobile
+scp -i your-key.pem -r . ubuntu@YOUR_EC2_IP:/home/ubuntu/expense_analyzer_mobile
 ```
 
 ## 5. Create a virtual environment
@@ -94,7 +94,7 @@ gunicorn --bind 0.0.0.0:5000 app:app
 Then open:
 
 ```text
-http://13.60.221.207
+http://YOUR_EC2_IP
 ```
 
 ## 8. Install the systemd service
@@ -121,7 +121,7 @@ Paste:
 ```nginx
 server {
     listen 80;
-    server_name 13.60.221.207;
+    server_name YOUR_EC2_IP;
 
     location / {
         proxy_pass http://127.0.0.1:5000;
