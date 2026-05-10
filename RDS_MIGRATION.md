@@ -33,7 +33,7 @@ The following commands were executed to configure the server:
 **Step 1: SSH into the EC2 instance**
 ```bash
 # Replace the IP with your actual EC2 IP address
-ssh ubuntu@13.60.221.207
+ssh ec2-user@13.60.221.207
 ```
 
 **Step 2: Navigate to the application directory**
