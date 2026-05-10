@@ -62,5 +62,11 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt
             
+            # Run Data Migration (One-time or idempotent)
+            if [ -f migrate_data.py ]; then
+              echo "Running data migration..."
+              python migrate_data.py
+            fi
+            
             # Restart the app
             sudo systemctl restart vault-mobile || echo "Service vault-mobile not running. Follow DEPLOY_EC2.md to set it up initially."

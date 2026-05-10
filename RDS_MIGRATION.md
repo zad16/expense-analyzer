@@ -44,3 +44,11 @@ The original SQLite and `rclone` sync code was preserved but **commented out**. 
    - SQLite `?` parameter placeholders were replaced with PostgreSQL `%s` placeholders.
    - Date functions like `date(t.date_created, 'unixepoch')` were replaced with PostgreSQL equivalent `to_char(to_timestamp(t.date_created), 'YYYY-MM-DD')`.
    - The history query timezone modifier `+05:30` was updated to `AT TIME ZONE 'Asia/Kolkata'`.
+
+## 4. Data Migration Process
+
+To populate the empty PostgreSQL RDS instance with the existing user data, a migration script was employed and automatically executed by the deployment pipeline:
+
+1. **Migration Script:** A new Python script (`migrate_data.py`) was created. It was programmed to automatically discover the latest local SQLite backup inside the `local_db` or `db` directories.
+2. **Schema & Data Transfer:** The script connects to the local SQLite database, dynamically reads the schemas for the `wallets`, `categories`, and `transactions` tables, recreates them in PostgreSQL, and then bulk-inserts all records.
+3. **Automated Execution:** The `.github/workflows/deploy_ec2.yml` GitHub Actions pipeline was updated to automatically execute `python migrate_data.py` on the EC2 instance right before restarting the application. Because the script executes directly on the EC2 instance, it safely utilized the local `.env` variables to reach the database over the secure private network, bypassing the firewall entirely.
