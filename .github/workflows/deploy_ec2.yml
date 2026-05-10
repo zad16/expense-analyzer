@@ -62,10 +62,14 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt
             
-            # Run Data Migration (One-time or idempotent)
-            if [ -f migrate_data.py ]; then
-              echo "Running data migration..."
-              python migrate_data.py
+            # Setup and Run Data Sync
+            if [ -f sync_data.py ]; then
+              echo "Running initial data sync..."
+              python sync_data.py
+              
+              echo "Setting up cron job for automated syncing (every 5 minutes)..."
+              CRON_CMD="cd $APP_DIR && source venv/bin/activate && python sync_data.py >> sync.log 2>&1"
+              (crontab -l 2>/dev/null | grep -v "sync_data.py"; echo "*/5 * * * * $CRON_CMD") | crontab -
             fi
             
             # Restart the app

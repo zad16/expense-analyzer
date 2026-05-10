@@ -85,12 +85,13 @@ The original SQLite code was preserved but **commented out**. New PostgreSQL log
 
 ---
 
-## 4. Data Migration Process
+## 4. Automated Data Sync Process
 
-To populate the empty PostgreSQL RDS instance with the existing user data from the local SQLite backup, an automated migration process was established:
+To keep the PostgreSQL RDS instance up to date with new transactions exported from the mobile app (the `.sql` backups), an automated, continuous sync process was established:
 
-1. **Migration Script (`migrate_data.py`):** A custom Python script was created. It dynamically reads the schemas for the `wallets`, `categories`, and `transactions` tables from the old `.sql` SQLite file, translates the column types to PostgreSQL (e.g., `REAL` to `DOUBLE PRECISION`), creates the tables in RDS, and bulk-inserts all the historical records.
-2. **Automated Execution (CI/CD):** 
+1. **Sync Script (`sync_data.py`):** A custom Python script replaced the one-time migration script. It dynamically finds the latest `.sql` SQLite file downloaded from Google Drive by `rclone`. It checks a `.last_sync` marker to ensure it only processes new files. If a new export is found, it translates the column types, overwrites the RDS tables, and bulk-inserts all records to perfectly mirror the mobile app.
+2. **Automated Execution (Cron Job):** 
    - The GitHub Actions pipeline (`.github/workflows/deploy_ec2.yml`) was updated.
-   - During deployment, the pipeline automatically executes `python migrate_data.py` directly on the EC2 instance right before restarting the application service. 
-   - Because the script executes from inside the EC2 instance, it has access to the `.env` credentials and can freely communicate with the RDS database over the secure private network, bypassing the firewall entirely.
+   - During deployment, the pipeline automatically executes `python sync_data.py` for an initial sync and installs a background **Cron Job** (`crontab`) on the EC2 instance.
+   - This cron job runs `sync_data.py` every 5 minutes continuously. 
+   - Because the script executes from inside the EC2 instance, it has access to the `.env` credentials and can freely communicate with the RDS database over the secure private network.
