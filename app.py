@@ -74,7 +74,7 @@ def handle_login(is_mobile=False):
         if request.form.get("pin") == APP_PIN:
             session['authenticated'] = True
             # Start sync immediately on login to avoid delay in dashboard
-            threading.Thread(target=get_latest_db).start()
+            # threading.Thread(target=get_latest_db).start()
             return redirect(url_for('mobile_index' if is_mobile else home_endpoint_for()))
         return render_template("mobile_login.html" if is_mobile else login_template_for(), error="Invalid PIN")
     return render_template("mobile_login.html" if is_mobile else login_template_for())
@@ -433,22 +433,25 @@ def api_summary():
     total_savings = round(res.get('income', 0) - res.get('expenses', 0), 2)
     history = get_history()
     
-    db_path = get_latest_db()
-    db_name = os.path.basename(db_path) if db_path else "No DB"
-    db_date = ""
-    if db_path:
-        import re
-        # Filename example: cashew-2026-03-24-14-52-13-799971.sql
-        match = re.search(r"(\d{4}-\d{2}-\d{2})", db_name)
-        if match:
-            try:
-                # Format to a readable date
-                dt_obj = datetime.strptime(match.group(1), "%Y-%m-%d")
-                db_date = dt_obj.strftime("%B %d, %Y")
-            except:
-                db_date = match.group(1)
-        else:
-            db_date = datetime.fromtimestamp(os.path.getmtime(db_path)).strftime("%B %d, %Y")
+    # db_path = get_latest_db()
+    # db_name = os.path.basename(db_path) if db_path else "No DB"
+    # db_date = ""
+    # if db_path:
+    #     import re
+    #     # Filename example: cashew-2026-03-24-14-52-13-799971.sql
+    #     match = re.search(r"(\d{4}-\d{2}-\d{2})", db_name)
+    #     if match:
+    #         try:
+    #             # Format to a readable date
+    #             dt_obj = datetime.strptime(match.group(1), "%Y-%m-%d")
+    #             db_date = dt_obj.strftime("%B %d, %Y")
+    #         except:
+    #             db_date = match.group(1)
+    #     else:
+    #         db_date = datetime.fromtimestamp(os.path.getmtime(db_path)).strftime("%B %d, %Y")
+    
+    db_name = "RDS PostgreSQL"
+    db_date = "Live"
 
     return jsonify({
         "current": {"savings": total_savings},
