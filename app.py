@@ -2,7 +2,9 @@
 import threading
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from openai import OpenAI
-import sqlite3
+# import sqlite3
+import psycopg2
+import psycopg2.extras
 import json
 import os
 import glob
@@ -116,84 +118,108 @@ logging.basicConfig(
 _db_cache = {"path": None, "expiry": 0}
 sync_lock = threading.Lock()
 
-def get_latest_db():
-    global _db_cache, _query_cache
-    import time
-    import shutil
-    now = time.time()
-    
-    # Fast path: check cache first without lock
-    if _db_cache["path"] and now < _db_cache["expiry"]:
-        return _db_cache["path"]
-
-    with sync_lock:
-        # Double-check cache inside lock
-        if _db_cache["path"] and now < _db_cache["expiry"]:
-            return _db_cache["path"]
-
-        try:
-            # Resolve path to be Linux-friendly if needed
-            target_dir = BACKUP_DIR
-            if os.name != 'nt' and target_dir.startswith('G:\\'):
-                # If on Linux but path is Windows-style, check for local 'db' first
-                target_dir = os.path.join(basedir, 'db')
-                
-            logging.debug(f"Scanning for DB in: {target_dir}")
-            files = glob.glob(os.path.join(target_dir, "*.sql"))
-            if not files and target_dir != os.path.join(basedir, 'db'):
-                files = glob.glob(os.path.join(basedir, 'db', '*.sql'))
-                
-            if not files:
-                logging.warning("No .sql files found in target directories.")
-                return _db_cache["path"] # Return old path if available even if expired
-                
-            latest_remote = max(files, key=os.path.getmtime)
-            logging.debug(f"Latest Remote DB found: {latest_remote}")
-
-            # --- Local Sync Logic (New) ---
-            local_dir = os.path.join(basedir, 'local_db')
-            if not os.path.exists(local_dir): os.makedirs(local_dir)
-            
-            local_path = os.path.join(local_dir, os.path.basename(latest_remote))
-            
-            # Only copy if local doesn't exist or is older than remote
-            if not os.path.exists(local_path) or os.path.getmtime(latest_remote) > os.path.getmtime(local_path):
-                logging.info(f"Syncing {latest_remote} to local storage...")
-                shutil.copy2(latest_remote, local_path)
-                logging.info("Sync complete.")
-                
-                # Clear query cache when a new database is detected and synced
-                _query_cache.clear()
-                logging.info("Cleared query cache due to new database sync.")
-            
-            # Use the local path for queries
-            latest = local_path
-            # --- End Local Sync Logic ---
-            
-            # Cache for 5 minutes
-            _db_cache = {"path": latest, "expiry": now + 300}
-            return latest
-        except Exception as e:
-            logging.error(f"Error in get_latest_db: {e}")
-            return _db_cache["path"] # Fallback to cached even if expired
+# def get_latest_db():
+#     global _db_cache, _query_cache
+#     import time
+#     import shutil
+#     now = time.time()
+#     
+#     # Fast path: check cache first without lock
+#     if _db_cache["path"] and now < _db_cache["expiry"]:
+#         return _db_cache["path"]
+# 
+#     with sync_lock:
+#         # Double-check cache inside lock
+#         if _db_cache["path"] and now < _db_cache["expiry"]:
+#             return _db_cache["path"]
+# 
+#         try:
+#             # Resolve path to be Linux-friendly if needed
+#             target_dir = BACKUP_DIR
+#             if os.name != 'nt' and target_dir.startswith('G:\\'):
+#                 # If on Linux but path is Windows-style, check for local 'db' first
+#                 target_dir = os.path.join(basedir, 'db')
+#                 
+#             logging.debug(f"Scanning for DB in: {target_dir}")
+#             files = glob.glob(os.path.join(target_dir, "*.sql"))
+#             if not files and target_dir != os.path.join(basedir, 'db'):
+#                 files = glob.glob(os.path.join(basedir, 'db', '*.sql'))
+#                 
+#             if not files:
+#                 logging.warning("No .sql files found in target directories.")
+#                 return _db_cache["path"] # Return old path if available even if expired
+#                 
+#             latest_remote = max(files, key=os.path.getmtime)
+#             logging.debug(f"Latest Remote DB found: {latest_remote}")
+# 
+#             # --- Local Sync Logic (New) ---
+#             local_dir = os.path.join(basedir, 'local_db')
+#             if not os.path.exists(local_dir): os.makedirs(local_dir)
+#             
+#             local_path = os.path.join(local_dir, os.path.basename(latest_remote))
+#             
+#             # Only copy if local doesn't exist or is older than remote
+#             if not os.path.exists(local_path) or os.path.getmtime(latest_remote) > os.path.getmtime(local_path):
+#                 logging.info(f"Syncing {latest_remote} to local storage...")
+#                 shutil.copy2(latest_remote, local_path)
+#                 logging.info("Sync complete.")
+#                 
+#                 # Clear query cache when a new database is detected and synced
+#                 _query_cache.clear()
+#                 logging.info("Cleared query cache due to new database sync.")
+#             
+#             # Use the local path for queries
+#             latest = local_path
+#             # --- End Local Sync Logic ---
+#             
+#             # Cache for 5 minutes
+#             _db_cache = {"path": latest, "expiry": now + 300}
+#             return latest
+#         except Exception as e:
+#             logging.error(f"Error in get_latest_db: {e}")
+#             return _db_cache["path"] # Fallback to cached even if expired
+# 
+# def query_db(query, params=()):
+#     db_path = get_latest_db()
+#     if not db_path: return []
+#     conn = None
+#     try:
+#         # Use a timeout to prevent hanging on locked databases
+#         conn = sqlite3.connect(f"file:{db_path}?mode=ro&nolock=1", uri=True, timeout=10)
+#         conn.row_factory = sqlite3.Row
+#         cursor = conn.cursor()
+#         cursor.execute(query, params)
+#         rows = [dict(row) for row in cursor.fetchall()]
+#         return rows
+#     except Exception as e:
+#         logging.error(f"SQL Error: {e} | Query: {query}")
+#         return []
+#     finally:
+#         if conn: conn.close()
 
 def query_db(query, params=()):
-    db_path = get_latest_db()
-    if not db_path: return []
-    conn = None
     try:
-        # Use a timeout to prevent hanging on locked databases
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro&nolock=1", uri=True, timeout=10)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT", 5432),
+            dbname=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD")
+        )
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Convert SQLite ? placeholders to PostgreSQL %s
+        query = query.replace('?', '%s')
+        
         cursor.execute(query, params)
-        rows = [dict(row) for row in cursor.fetchall()]
-        return rows
+        rows = cursor.fetchall()
+        result = [dict(row) for row in rows] if rows else []
+        conn.close()
+        return result
     except Exception as e:
+        import logging
         logging.error(f"SQL Error: {e} | Query: {query}")
         return []
-    finally:
-        if conn: conn.close()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -301,7 +327,8 @@ def query_finance_data(request_type, start_date, end_date, search_term=None, sor
             where, params, join_clause = build_where_clause(ts_start, ts_end, tx_type="expense", category=category, keyword=keyword)
             order_by = "ABS(t.amount) DESC" if "AMOUNT" in str(sort) else "t.date_created DESC"
             if "ASC" in str(sort): order_by = order_by.replace("DESC", "ASC")
-            rows = query_db(f"SELECT t.name as transaction_name, t.note as note, ABS(t.amount) as amount, date(t.date_created, 'unixepoch') as date, c.name as main_category, sc.name as sub_category FROM transactions t {join_clause} {where} ORDER BY {order_by} LIMIT ?", tuple(params + [limit_val]))
+            # rows = query_db(f"SELECT t.name as transaction_name, t.note as note, ABS(t.amount) as amount, date(t.date_created, 'unixepoch') as date, c.name as main_category, sc.name as sub_category FROM transactions t {join_clause} {where} ORDER BY {order_by} LIMIT ?", tuple(params + [limit_val]))
+            rows = query_db(f"SELECT t.name as transaction_name, t.note as note, ABS(t.amount) as amount, to_char(to_timestamp(t.date_created), 'YYYY-MM-DD') as date, c.name as main_category, sc.name as sub_category FROM transactions t {join_clause} {where} ORDER BY {order_by} LIMIT %s", tuple(params + [limit_val]))
             
             # Also calculate the total for this specific list/filter
             total_rows = query_db(f"SELECT SUM(ABS(t.amount)) as total FROM transactions t {join_clause} {where}", tuple(params))
@@ -318,20 +345,37 @@ def query_finance_data(request_type, start_date, end_date, search_term=None, sor
             # Actually, we can use the same WHERE clause if we are careful.
             
             rows = query_db(f"""
+#                 SELECT stats.day, stats.daily_total_spent, max_items.transaction_name, max_items.note, max_items.amount
+#                 FROM (
+#                     SELECT date(t.date_created, 'unixepoch') as day, ROUND(SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END), 2) as daily_total_spent
+#                     FROM transactions t {join_clause}
+#                     {where}
+#                     GROUP BY day HAVING daily_total_spent > 0
+#                 ) stats
+#                 LEFT JOIN (
+#                     SELECT date(t.date_created, 'unixepoch') as sub_day, t.name as transaction_name, t.note as note, ABS(t.amount) as amount, MAX(ABS(t.amount))
+#                     FROM transactions t {join_clause}
+#                     {where}
+#                     GROUP BY sub_day
+#                 ) max_items ON stats.day = max_items.sub_day
+#                 ORDER BY stats.daily_total_spent {order_dir} LIMIT ?
                 SELECT stats.day, stats.daily_total_spent, max_items.transaction_name, max_items.note, max_items.amount
                 FROM (
-                    SELECT date(t.date_created, 'unixepoch') as day, ROUND(SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END), 2) as daily_total_spent
+                    SELECT to_char(to_timestamp(t.date_created), 'YYYY-MM-DD') as day, ROUND(SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END), 2) as daily_total_spent
                     FROM transactions t {join_clause}
                     {where}
-                    GROUP BY day HAVING daily_total_spent > 0
+                    GROUP BY day HAVING SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) > 0
                 ) stats
                 LEFT JOIN (
-                    SELECT date(t.date_created, 'unixepoch') as sub_day, t.name as transaction_name, t.note as note, ABS(t.amount) as amount, MAX(ABS(t.amount))
-                    FROM transactions t {join_clause}
-                    {where}
-                    GROUP BY sub_day
+                    SELECT sub_day, transaction_name, note, amount
+                    FROM (
+                        SELECT to_char(to_timestamp(t.date_created), 'YYYY-MM-DD') as sub_day, t.name as transaction_name, t.note as note, ABS(t.amount) as amount,
+                               ROW_NUMBER() OVER(PARTITION BY to_char(to_timestamp(t.date_created), 'YYYY-MM-DD') ORDER BY ABS(t.amount) DESC) as rn
+                        FROM transactions t {join_clause} {where}
+                    ) ranked
+                    WHERE rn = 1
                 ) max_items ON stats.day = max_items.sub_day
-                ORDER BY stats.daily_total_spent {order_dir} LIMIT ?
+                ORDER BY stats.daily_total_spent {order_dir} LIMIT %s
             """, tuple(params + params + [limit_val]))
             res_data = {"results": rows}
 
@@ -348,7 +392,8 @@ def query_finance_data(request_type, start_date, end_date, search_term=None, sor
 def get_history():
     try:
         # Using '+05:30' modifier so transactions are grouped by their Indian Standard Time month
-        rows = query_db(f"SELECT strftime('%Y-%m', datetime(date_created, 'unixepoch', '+05:30')) as month, SUM(amount) as savings FROM transactions WHERE paid = 1 AND wallet_fk != '{CC_WALLET_ID}' AND date_created <= strftime('%s', 'now') GROUP BY month ORDER BY month DESC LIMIT 12")
+        # rows = query_db(f"SELECT strftime('%Y-%m', datetime(date_created, 'unixepoch', '+05:30')) as month, SUM(amount) as savings FROM transactions WHERE paid = 1 AND wallet_fk != '{CC_WALLET_ID}' AND date_created <= strftime('%s', 'now') GROUP BY month ORDER BY month DESC LIMIT 12")
+        rows = query_db(f"SELECT to_char(to_timestamp(date_created) AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM') as month, SUM(amount) as savings FROM transactions WHERE paid = 1 AND wallet_fk != '{CC_WALLET_ID}' AND date_created <= extract(epoch from now()) GROUP BY month ORDER BY month DESC LIMIT 12")
         if not rows: return []
         return [{"month": datetime.strptime(r['month'], "%Y-%m").strftime("%B %Y"), "savings": round(r['savings'] or 0, 2), "is_positive": (r['savings'] or 0) >= 0} for r in rows]
     except Exception as e:
@@ -361,16 +406,16 @@ def get_history():
 def index():
     if is_mobile_variant():
         return redirect(url_for("mobile_index"))
-    # Background pre-sync to speed up initial load
-    import threading
-    threading.Thread(target=get_latest_db).start()
+    # # Background pre-sync to speed up initial load
+    # import threading
+    # threading.Thread(target=get_latest_db).start()
     return render_template("index.html")
 
 
 @app.route("/m")
 def mobile_index():
-    import threading
-    threading.Thread(target=get_latest_db).start()
+    # import threading
+    # threading.Thread(target=get_latest_db).start()
     return render_template("mobile.html")
 
 @app.route("/api/summary")
