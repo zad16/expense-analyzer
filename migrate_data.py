@@ -85,8 +85,8 @@ def migrate():
             
             # handle primary key
             pk = "PRIMARY KEY" if col['pk'] else ""
-            create_cols.append(f"{col_name} {pg_type} {pk}")
-            col_names.append(col_name)
+            create_cols.append(f'"{col_name}" {pg_type} {pk}')
+            col_names.append(f'"{col_name}"')
             
         create_stmt = f"CREATE TABLE IF NOT EXISTS {table} ({', '.join(create_cols)});"
         print(f"Creating table in PostgreSQL...")
